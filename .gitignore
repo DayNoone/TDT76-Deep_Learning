@@ -1,0 +1,7 @@
+*.picklefile
+*.pickle
+*.txt
+
+.train
+.validate
+.corrupt images
