@@ -1,7 +1,15 @@
+# Dataset #
 *.picklefile
 *.pickle
 *.txt
 
-.train
-.validate
-.corrupt images
+train
+validate
+corrupt_images
+
+# PyCharm #
+.idea
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]

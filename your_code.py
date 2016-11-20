@@ -1,6 +1,16 @@
+import glob
 import pickle
 import random
+
+import time
 from PIL import Image
+
+from image_preprocessing import run_vgg
+from word_preprocessing import *
+import model
+from evaluate import compare_to_cluster
+from image_preprocessing import embed_image
+from helpers.helpers import load_pickle_file
 
 
 def train(location='./train/'):
@@ -10,7 +20,10 @@ def train(location='./train/'):
     :param location: The location of the training data folder hierarchy
     :return: nothing
     """
-    pass
+
+    run_vgg(location)
+    labels_embedding = run_word_preprocessing(location)
+    model.train_model(labels_embedding, location)
 
 
 def test(queries=list(), location='./test'):
@@ -28,17 +41,27 @@ def test(queries=list(), location='./test'):
 
     # Load the dictionary with all training files. This is just to get a hold of which
     # IDs are there; will choose randomly among them
-    training_labels = pickle.load(open('./train/pickle/combined.pickle', 'rb'))
-    training_labels = list(training_labels.keys())
-
+    # training_labels = pickle.load(open('./train/pickle/combined.pickle', 'rb'))
+    # training_labels = list(training_labels.keys())
+    count = 0
+    tot = len(queries)
     for query in queries:
 
         # This is the image. Just opening if here for the fun of it; not used later
-        image = Image.open(location + '/pics/' + query + '.jpg')
-        image.show()
+        # query_image = Image.open(location + '/pics/' + query + '.jpg')
+        # query_image.show()
 
         # Generate a random list of 50 entries
-        cluster = [training_labels[random.randint(0, len(training_labels) - 1)] for idx in range(50)]
-        my_return_dict[query] = cluster
-
+        # cluster = [training_labels[random.randint(0, len(training_labels) - 1)] for idx in range(50)]
+        image_embedding = embed_image(location + '/pics/' + query + '.jpg')
+        cluster_filenames, cluster_similarities = compare_to_cluster(image_embedding)
+        my_return_dict[query] = cluster_filenames
+        print_progress(count, tot, prefix="Predicting images")
+        count += 1
     return my_return_dict
+
+if __name__ == "__main__":
+    start_time = time.time()
+    labels_dict = load_pickle_file("./validate/pickle/descriptions000000000.pickle")
+    predicted_images_dict = test([(f.split("pics/")[-1]).split(".jpg")[0] for f in glob.glob("./validate/pics/000000000/*.jpg")], "./validate")
+    print("Time: ", time.time() - start_time)

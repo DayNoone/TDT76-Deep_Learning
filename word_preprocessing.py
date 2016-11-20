@@ -1,34 +1,41 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import glob
 import os
-
 import numpy as np  # Make sure that numpy is imported
 import pickle
 import settings
 from helpers.helpers import print_progress
-from front import generate_dict_from_directory
-import math
+
+"""
+Modified code taken from my master project: https://github.com/ruoccoma/master_works/
+"""
 
 
 def get_relevant_word_embedding_dict(relevant_labels):
-	count_read_glove_embedding = 0
-	with open("glove.6B.300d.txt") as word_embedding:
-		print("Getting word embeddings...")
-		relevant_embedded_words = {}
-		for line in word_embedding.readlines():
-			line = (line.strip()).split(" ")
-			embedded_word = line.pop(0)
-			if embedded_word in relevant_labels:
-				line = list(map(float, line))
-				relevant_embedded_words[embedded_word] = np.asarray(line)
-			if count_read_glove_embedding % 1000 == 0:
-				print_progress(count_read_glove_embedding, 400000)
-			count_read_glove_embedding += 1
+	if os.path.isfile("preprocessing/glove_embedding.pickle"):
+		print("Fetching saved relevant word embedding dictionary")
+		f = open("preprocessing/glove_embedding.pickle", 'rb')
+		relevant_embedded_words = pickle.load(f)
+		f.close()
+	else:
+		print("Creating relevant word embedding dictionary")
+		count_read_glove_embedding = 0
+		with open("preprocessing/glove.6B.300d.txt") as word_embedding:
+			print("Getting word embeddings...")
+			relevant_embedded_words = {}
+			for line in word_embedding.readlines():
+				line = (line.strip()).split(" ")
+				embedded_word = line.pop(0)
+				if embedded_word in relevant_labels:
+					line = list(map(float, line))
+					relevant_embedded_words[embedded_word] = np.asarray(line)
+				if count_read_glove_embedding % 1000 == 0:
+					print_progress(count_read_glove_embedding, 400000)
+				count_read_glove_embedding += 1
 
-	f = open("glove_embedding.picklefile", 'wb')
-	pickle.dump(relevant_embedded_words, f)
-	f.close()
+		f = open("glove_embedding.pickle", 'wb')
+		pickle.dump(relevant_embedded_words, f)
+		f.close()
 	return relevant_embedded_words
 
 
@@ -106,14 +113,14 @@ def convert_sentences(labels_dict, num_features):
 		counter += 1
 	print()
 
-	word_embedding_file = open("labels_embedding.pickle", 'wb')
+	word_embedding_file = open("preprocessing/labels_embedding.pickle", 'wb')
 	pickle.dump(sentenceFeatureVecs, word_embedding_file, protocol=2)
 	word_embedding_file.close()
 
 
 def get_word_embedding_dict(labels_dict):
-	if os.path.isfile("glove_embedding.picklefile"):
-		f = open("glove_embedding.picklefile", 'rb')
+	if os.path.isfile("preprocessing/glove_embedding.pickle"):
+		f = open("preprocessing/glove_embedding.pickle", 'rb')
 		word_embedding_dict = pickle.load(f)
 		f.close()
 	else:
@@ -122,15 +129,22 @@ def get_word_embedding_dict(labels_dict):
 	return word_embedding_dict
 
 
-def run():
-	if os.path.isfile("./../train/pickle/combined.pickle"):
-		train_labels_file = open("./../train/pickle/combined.pickle", 'rb')
+def run_word_preprocessing(location="./train/"):
+	if os.path.isfile(location + "pickle/combined.pickle"):
+		train_labels_file = open(location + "pickle/combined.pickle", 'rb')
 		train_labels = pickle.load(train_labels_file)
 		train_labels_file.close()
 	else:
-		train_labels = generate_dict_from_directory()
-	convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
+		print("Missing combine.pickle for this dir")
+
+	if os.path.isfile("preprocessing/labels_embedding.pickle"):
+		f = open("preprocessing/labels_embedding.pickle", 'rb')
+		labels_embedding = pickle.load(f)
+		f.close()
+	else:
+		labels_embedding = convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
+	return labels_embedding
 
 
 if __name__ == "__main__":
-	run()
+	run_word_preprocessing()

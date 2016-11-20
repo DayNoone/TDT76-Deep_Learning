@@ -144,21 +144,25 @@ if __name__ == "__main__":
     train()
 
     # Generate random queries, just to run the "test"-function. These are elements from the TEST-SET folder
-    test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
+    # test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
+    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/descriptions000000000.pickle', directory='./validate/txt/')
     test_ids = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
-    for i in range(1000):
-        queries.append(test_ids[random.randint(0, no_test_images - 1)])
-    results = test(queries=queries)
+    # for i in range(1000):
+    for i in range(100):
+        queries.append("000000000/" + test_ids[random.randint(0, no_test_images - 1)])
+    # results = test(queries=queries)
+    results = test(queries=queries, location="./validate")
 
     # Run the score function
     total_score = 0.0
     print(50 * '=' + '\n' + 'Individual image scores:' + '\n' + 50 * '=')
     for image in queries:
         if image in results.keys():
-            image_score = score(label_dict=all_labels, target=image, selection=results[image])
+            # image_score = score(label_dict=all_labels, target=image, selection=results[image])
+            image_score = score(label_dict=all_labels, target=image.split("/")[-1], selection=results[image])
         else:
             image_score = 0.0
             print('No result generated for ' + image)

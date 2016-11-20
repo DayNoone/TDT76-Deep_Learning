@@ -1,6 +1,38 @@
+import glob
 import sys
 import math
 import numpy as np
+import pickle
+import os
+
+
+"""
+Code taken from my master project: https://github.com/ruoccoma/master_works/
+"""
+
+def get_all_image_vectors():
+	all_image_filnames = []
+	all_image_vectors = []
+	for folder_path in glob.glob("./preprocessing/trained_image_embeddings" + "/*.pickle"):
+		image_folder_dictionary = load_pickle_file(folder_path)
+		for image in image_folder_dictionary:
+			all_image_filnames.append(image)
+			all_image_vectors.append(image_folder_dictionary[image][0])
+	return [all_image_filnames, all_image_vectors]
+
+
+def load_pickle_file(path):
+	if os.path.isfile(path):
+		f = open(path, "rb")
+		data = pickle.load(f)
+		f.close()
+		return data
+	return None
+
+def save_pickle_file(data, path):
+	f = open(path, "wb")
+	pickle.dump(data, f)
+	f.close()
 
 
 def l2norm(array):

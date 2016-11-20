@@ -1,22 +1,22 @@
 import glob
-
 from keras.applications.resnet50 import ResNet50
 from keras.preprocessing import image
 from keras.applications.resnet50 import preprocess_input, decode_predictions
-from keras.models import Model
 import os
 import numpy as np
 from helpers.helpers import print_progress
-from helpers.helpers import l2norm
 import pickle
-
-
-LAYER = 'fc2'
 
 def get_model():
 	base_model = ResNet50(weights='imagenet', include_top=False)
 	return base_model
 	# return Model(input=base_model.input, output=base_model.get_layer(LAYER).output)
+
+
+LAYER = 'fc2'
+print("Getting model...")
+model = get_model()
+
 
 
 def predict(model, img_path):
@@ -32,7 +32,7 @@ def get_id_from_path(file):
 	return image_id
 
 def run_test():
-	from sklearn.metrics.pairwise import cosine_similarity
+	# from sklearn.metrics.pairwise import cosine_similarity
 	vgg = get_model()
 	objects1 = predict(vgg, "./../train/pics/000038100/9b4e2b7210e3e36f.jpg")
 	print(objects1)
@@ -42,37 +42,67 @@ def run_test():
 	# print(cosine_similarity(objects1, objects2))
 
 
-def run_vgg():
-	vgg = get_model()
-	for folder_path in glob.glob("./../train/pics/*"):
-		count = 0
+def run_vgg(folder, check_for_corrupt_images=False):
+	if check_for_corrupt_images:
+		if print_corrupt_images() > 0:
+			return
+	for folder_path in glob.glob(folder + "pics/*"):
+		store_path = "preprocessing/stored_image_embeddings_" + folder.split("/")[1] + "/" + folder_path.split('/')[-1] + ".pickle"
+		count = 1
 		tot = len(glob.glob(folder_path + "/*.jpg"))
 		predictions = {}
-		if not os.path.isfile(folder_path):
+		if not os.path.isfile(store_path):
 			for filepath in glob.glob(folder_path + "/*.jpg"):
 				if os.stat(filepath).st_size > 100:
-					predictions[get_id_from_path(filepath)] = predict(vgg, filepath)[0][0]
+					predictions[get_id_from_path(filepath)] = predict(model, filepath)[0][0][0]
 				print_progress(count, tot, prefix=folder_path)
 				count += 1
-			image_embedding_file = open("stored_image_embeddings/" + folder_path.split('/')[-1] + ".pickle", 'wb')
+			image_embedding_file = open(store_path, 'wb')
 			pickle.dump(predictions, image_embedding_file, protocol=2)
 			image_embedding_file.close()
 			print()
 		else:
-			print("Skipping folder: ", folder_path)
+			print("Already preprocessed folder: ", folder_path)
+
+def embed_image(path):
+	return predict(model, path)[0][0][0]
 
 
-def check_for_corrupt_images():
+def print_corrupt_images():
 	count = 0
 	for folder_path in glob.glob("./../train/pics/*"):
 		for filepath in glob.glob(folder_path + "/*.jpg"):
 			try:
 				image.load_img(filepath, target_size=(224, 224))
 			except:
-				print(filepath)
+				print("Warning, corrupt image: ", filepath)
 				count += 1
-	print(count)
+	return count
+
+
+def check_similarity():
+	vector1 = "f1dd0d51388c40b0"
+	vector2 = "d75c52b8f629543f"
+	dissimilar = "634514be57b43ada"
+
+	f = open("preprocessing/stored_image_embeddings_train/000000000.pickle", "rb")
+	image_dict1 = pickle.load(f)
+	f.close()
+
+	from sklearn.metrics.pairwise import cosine_similarity
+	vec1 = image_dict1[vector1]
+	vec2 = image_dict1[vector2]
+	sim1 = cosine_similarity(vec1, vec2)[0][0]
+	print("Similar: ", sim1)
+
+	# vec1 = image_dict1[vector1]
+	# vec2 = image_dict1[dissimilar]
+	# sim2 = cosine_similarity(vec1, vec2)[0][0]
+	# print("Dissimilar", sim2)
+
+
+
 
 if __name__ == "__main__":
-	run_vgg()
-	# check_for_corrupt_images()
+	# run_vgg("train")
+	check_similarity()
