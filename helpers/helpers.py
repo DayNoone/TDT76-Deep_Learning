@@ -21,6 +21,29 @@ def get_all_image_vectors():
 	return [all_image_filnames, all_image_vectors]
 
 
+def get_all_only_cnn_image_vectors():
+	all_image_filnames = []
+	all_image_vectors = []
+	data_type = ("./train/").split("/")[1]
+	for folder_path in glob.glob("./preprocessing/stored_image_embeddings_" + data_type + "/*.pickle"):
+		image_folder_dictionary = load_pickle_file(folder_path)
+		for image in image_folder_dictionary:
+			all_image_filnames.append(image)
+			all_image_vectors.append(image_folder_dictionary[image][0])
+	return [all_image_filnames, all_image_vectors]
+
+
+def get_all_trained_image_vectors():
+	all_image_filnames = []
+	all_image_vectors = []
+	for folder_path in glob.glob("./preprocessing/trained_image_embeddings" + "/*.pickle"):
+		image_folder_dictionary = load_pickle_file(folder_path)
+		for image in image_folder_dictionary:
+			all_image_filnames.append(image)
+			all_image_vectors.append(image_folder_dictionary[image][0])
+	return [all_image_filnames, all_image_vectors]
+
+
 def load_pickle_file(path):
 	if os.path.isfile(path):
 		f = open(path, "rb")

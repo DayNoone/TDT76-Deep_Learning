@@ -68,5 +68,11 @@ def check_for_nan():
 				break
 	return count
 
+list = [("a", 3), ("b", 2), ("c", 1)]
+list.sort(key=lambda s: s[1], reverse=True)
+print(list)
+for tuple in list:
+	print(tuple[0])
+
 # print(check_for_nan())
 # check_max_min_similarity()

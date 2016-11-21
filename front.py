@@ -2,6 +2,10 @@ import os.path
 import random
 import glob
 import pickle
+
+import time
+from PIL import Image
+
 from your_code import train, test
 
 
@@ -135,6 +139,7 @@ def generate_dict_from_text_file(filename):
 
 
 if __name__ == "__main__":
+    start_time = time.time()
 
     # First calls here to make sure we have generated a list of all IDS and their labels stored in a pickle
     train_labels = generate_dict_from_directory()
@@ -145,14 +150,14 @@ if __name__ == "__main__":
 
     # Generate random queries, just to run the "test"-function. These are elements from the TEST-SET folder
     # test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
-    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/descriptions000000000.pickle', directory='./validate/txt/')
+    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/descriptions000000100.pickle', directory='./validate/txt/')
     test_ids = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
     # for i in range(1000):
     for i in range(100):
-        queries.append("000000000/" + test_ids[random.randint(0, no_test_images - 1)])
+        queries.append("000000100/" + test_ids[random.randint(0, no_test_images - 1)])
     # results = test(queries=queries)
     results = test(queries=queries, location="./validate")
 
@@ -160,7 +165,12 @@ if __name__ == "__main__":
     total_score = 0.0
     print(50 * '=' + '\n' + 'Individual image scores:' + '\n' + 50 * '=')
     for image in queries:
+        # query_image = Image.open('./validate/pics/' + image + '.jpg')
+        # query_image.show()
+        print("Query: ", image, ": ", all_labels[image.split("/")[-1]]) #
         if image in results.keys():
+        #     for result in results[image]:
+        #         print("Results: ", all_labels[result]) #
             # image_score = score(label_dict=all_labels, target=image, selection=results[image])
             image_score = score(label_dict=all_labels, target=image.split("/")[-1], selection=results[image])
         else:
@@ -171,3 +181,4 @@ if __name__ == "__main__":
 
     print(50 * '=' + '\n' + 'Average score over %d images: %10.8f' % (len(queries), total_score / len(queries))
           + '\n' + 50 * '=')
+    print("Time elapsed: ", time.time() - start_time)

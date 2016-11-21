@@ -4,7 +4,8 @@ import os
 import numpy as np  # Make sure that numpy is imported
 import pickle
 import settings
-from helpers.helpers import print_progress
+from front import generate_dict_from_directory
+from helpers.helpers import print_progress, load_pickle_file
 
 """
 Modified code taken from my master project: https://github.com/ruoccoma/master_works/
@@ -129,20 +130,13 @@ def get_word_embedding_dict(labels_dict):
 	return word_embedding_dict
 
 
-def run_word_preprocessing(location="./train/"):
-	if os.path.isfile(location + "pickle/combined.pickle"):
-		train_labels_file = open(location + "pickle/combined.pickle", 'rb')
-		train_labels = pickle.load(train_labels_file)
-		train_labels_file.close()
-	else:
-		print("Missing combine.pickle for this dir")
+def run_word_preprocessing():
+	train_labels = generate_dict_from_directory()
 
-	if os.path.isfile("preprocessing/labels_embedding.pickle"):
-		f = open("preprocessing/labels_embedding.pickle", 'rb')
-		labels_embedding = pickle.load(f)
-		f.close()
-	else:
-		labels_embedding = convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
+	if not os.path.isfile("preprocessing/labels_embedding.pickle"):
+		convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
+
+	labels_embedding = load_pickle_file("preprocessing/labels_embedding.pickle")
 	return labels_embedding
 
 

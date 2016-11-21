@@ -7,6 +7,7 @@ import numpy as np
 from helpers.helpers import print_progress
 import pickle
 
+
 def get_model():
 	base_model = ResNet50(weights='imagenet', include_top=False)
 	return base_model
@@ -14,9 +15,8 @@ def get_model():
 
 
 LAYER = 'fc2'
-print("Getting model...")
+print("Loading image embedding model...")
 model = get_model()
-
 
 
 def predict(model, img_path):
@@ -30,6 +30,7 @@ def predict(model, img_path):
 def get_id_from_path(file):
 	image_id = (file.split(".jpg")[0]).split("/")[-1]
 	return image_id
+
 
 def run_test():
 	# from sklearn.metrics.pairwise import cosine_similarity
@@ -63,6 +64,7 @@ def run_vgg(folder, check_for_corrupt_images=False):
 			print()
 		else:
 			print("Already preprocessed folder: ", folder_path)
+
 
 def embed_image(path):
 	return predict(model, path)[0][0][0]
@@ -99,8 +101,6 @@ def check_similarity():
 	# vec2 = image_dict1[dissimilar]
 	# sim2 = cosine_similarity(vec1, vec2)[0][0]
 	# print("Dissimilar", sim2)
-
-
 
 
 if __name__ == "__main__":
