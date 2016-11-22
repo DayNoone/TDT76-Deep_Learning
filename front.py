@@ -150,14 +150,14 @@ if __name__ == "__main__":
 
     # Generate random queries, just to run the "test"-function. These are elements from the TEST-SET folder
     # test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
-    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/descriptions000000100.pickle', directory='./validate/txt/')
+    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/combine.pickle', directory='./validate/txt/')
     test_ids = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
     # for i in range(1000):
     for i in range(100):
-        queries.append("000000100/" + test_ids[random.randint(0, no_test_images - 1)])
+        queries.append(test_ids[random.randint(0, no_test_images - 1)])
     # results = test(queries=queries)
     results = test(queries=queries, location="./validate")
 

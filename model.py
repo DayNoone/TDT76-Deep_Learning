@@ -3,17 +3,22 @@ import glob
 import time
 from keras.layers import Dense, Dropout, Lambda, BatchNormalization
 from keras.engine import Input, Model
+from keras.callbacks import EarlyStopping
+import keras.backend as K
 
 # from custom_callback import WriteToFileCallback
 # custom_callback = WriteToFileCallback(settings.RESULT_TEXTFILE_PATH)
 from word_preprocessing import *
-from helpers.helpers import load_pickle_file, get_all_image_vectors, save_pickle_file
+from helpers.helpers import load_pickle_file, get_all_image_vectors, save_pickle_file, tf_l2norm
+
+
+early_stopping = EarlyStopping(monitor='val_loss', patience=5)
 
 OPTIMIZER = "adam"
 LOSS = "categorical_crossentropy"
 EPOCHS = 50
 BATCH_SIZE = 128
-MODEL_NAME = "Dropout" + "-" + str(EPOCHS) + "-" + str(BATCH_SIZE)
+MODEL_NAME = "FF" + "-" + str(EPOCHS) + "-" + str(BATCH_SIZE)
 
 
 def train_model(labels_embedding, location):
@@ -29,20 +34,19 @@ def train_model(labels_embedding, location):
 		model.fit(image_vectors, label_vectors,
 				  batch_size=BATCH_SIZE,
 				  nb_epoch=EPOCHS,
+				  callbacks=[early_stopping],
+				  validation_split=0.1,
 				  shuffle=True)
 
 		save_model_to_file(model)
 
-	save_trained_embeddings()
+		save_trained_embeddings()
 
 
 def get_base_model():
 	image_inputs = Input(shape=(2048,), name="Image_input")
-	image_model = Lambda(lambda x: abs(x), name="Image_abs_1")(image_inputs)
+	image_model = Dense(1024, activation='relu')(image_inputs)
 	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = Dropout(0.2)(image_model)
-	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = BatchNormalization()(image_model)
 	embedding_layer = Dense(512, activation='relu', name="embedding_layer")(image_model)
 	predictions = Dense(300, activation='softmax', name="softmax_layer")(embedding_layer)
 	model = Model(input=image_inputs, output=predictions)
@@ -66,14 +70,11 @@ def save_trained_embeddings():
 	for file in glob.glob("./preprocessing/stored_image_embeddings_train/*.pickle"):
 		store_path = "./preprocessing/trained_image_embeddings/" + file.split('/')[-1]
 		trained_image_embeddings = {}
-		if not os.path.isfile(store_path):
-			image_dict = load_pickle_file(file)
-			for image_filepath in image_dict:
-				trained_image_embeddings[image_filepath] = model.predict(image_dict[image_filepath])
-			save_pickle_file(trained_image_embeddings, store_path)
-			print_progress(count, tot, prefix="Saving trained image embeddings")
-		else:
-			print("Skipping already created file", store_path)
+		image_dict = load_pickle_file(file)
+		for image_filepath in image_dict:
+			trained_image_embeddings[image_filepath] = model.predict(image_dict[image_filepath])
+		save_pickle_file(trained_image_embeddings, store_path)
+		print_progress(count, tot, prefix="Saving trained image embeddings")
 		count += 1
 	print("Time to save trained_embeddings: ", time.time() - start_time)
 

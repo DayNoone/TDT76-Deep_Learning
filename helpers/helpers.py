@@ -4,6 +4,7 @@ import math
 import numpy as np
 import pickle
 import os
+import tensorflow as tf
 
 
 """
@@ -84,3 +85,8 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
 	if iteration == total:
 		sys.stdout.write('\n')
 	sys.stdout.flush()
+
+def tf_l2norm(tensor_array):
+	norm = tf.sqrt(tf.reduce_sum(tf.pow(tensor_array, 2)))
+	tensor_array /= norm
+	return tensor_array

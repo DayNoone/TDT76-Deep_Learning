@@ -8,7 +8,7 @@ from PIL import Image
 from image_preprocessing import run_vgg
 from word_preprocessing import *
 import model
-from cluster import compare_to_cluster, create_cluster, get_cluster
+from cluster import compare_to_cluster, create_cluster, get_cluster, get_dict_cluster_sizes
 from image_preprocessing import embed_image
 from helpers.helpers import load_pickle_file, get_all_trained_image_vectors
 from model import predict_vector_on_model, get_prediction_model
@@ -27,8 +27,14 @@ def train(location='./train/'):
     model.train_model(labels_embedding, location)
     trained_image_filenames, trained_image_vectors = get_all_trained_image_vectors()
 
-    create_cluster(trained_image_vectors, "preprocessing/image_vector_cluster.pickle")
-
+    cluster = create_cluster(trained_image_vectors, "preprocessing/image_vector_cluster.pickle")
+    cluster_dict = get_dict_cluster_sizes(cluster)
+    max_cluster_size = 0
+    for i in cluster_dict:
+        # print("Cluster: ", i, " size: ", cluster_dict[i])
+        if cluster_dict[i] > max_cluster_size:
+            max_cluster_size = cluster_dict[i]
+    print("Largest cluster: ", max_cluster_size)
 
 def test(queries=list(), location='./test'):
     """
@@ -52,20 +58,21 @@ def test(queries=list(), location='./test'):
     cluster = get_cluster()
     model = get_prediction_model()
     for query in queries:
-
-        # This is the image. Just opening if here for the fun of it; not used later
-        # query_image = Image.open(location + '/pics/' + query + '.jpg')
-        # query_image.show()
-
+        query_path = find_file(query + ".jpg", location)
         # Generate a random list of 50 entries
         # cluster = [training_labels[random.randint(0, len(training_labels) - 1)] for idx in range(50)]
-        image_embedding = embed_image(location + '/pics/' + query + '.jpg')
+        image_embedding = embed_image(query_path)
         trained_image_embedding = predict_vector_on_model(image_embedding, model)
-        cluster_filenames = compare_to_cluster(trained_image_embedding, cluster, 50)
+        cluster_filenames, predicted_cluster_id = compare_to_cluster(trained_image_embedding, cluster, 50)
         my_return_dict[query] = cluster_filenames
         print_progress(count, tot, prefix="Predicting images")
         count += 1
     return my_return_dict
+
+def find_file(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
 
 if __name__ == "__main__":
     start_time = time.time()
