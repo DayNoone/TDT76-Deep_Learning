@@ -4,7 +4,6 @@ import os
 import numpy as np  # Make sure that numpy is imported
 import pickle
 import settings
-from front import generate_dict_from_directory
 from helpers.helpers import print_progress, load_pickle_file
 
 """
@@ -117,6 +116,7 @@ def convert_sentences(labels_dict, num_features):
 	word_embedding_file = open("preprocessing/labels_embedding.pickle", 'wb')
 	pickle.dump(sentenceFeatureVecs, word_embedding_file, protocol=2)
 	word_embedding_file.close()
+	return sentenceFeatureVecs
 
 
 def get_word_embedding_dict(labels_dict):
@@ -130,13 +130,18 @@ def get_word_embedding_dict(labels_dict):
 	return word_embedding_dict
 
 
-def run_word_preprocessing():
-	train_labels = generate_dict_from_directory()
+def run_word_preprocessing(location="./train/"):
+	if os.path.isfile(location + "pickle/combined.pickle"):
+		train_labels = load_pickle_file(location + "pickle/combined.pickle")
+	else:
+		print("Missing combine.pickle for this dir")
 
-	if not os.path.isfile("preprocessing/labels_embedding.pickle"):
-		convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
-
-	labels_embedding = load_pickle_file("preprocessing/labels_embedding.pickle")
+	if os.path.isfile("preprocessing/labels_embedding.pickle"):
+		f = open("preprocessing/labels_embedding.pickle", 'rb')
+		labels_embedding = pickle.load(f)
+		f.close()
+	else:
+		labels_embedding = convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
 	return labels_embedding
 
 

@@ -5,13 +5,12 @@ import random
 import time
 from PIL import Image
 
-from image_preprocessing import run_vgg
 from word_preprocessing import *
 import model
-from cluster import compare_to_cluster, create_cluster, get_cluster
+from cluster import compare_to_cluster, create_cluster, get_cluster, get_dict_cluster_sizes
 from image_preprocessing import embed_image
-from helpers.helpers import load_pickle_file, get_all_trained_image_vectors
-from model import predict_vector_on_model, get_prediction_model
+from helpers.helpers import load_pickle_file, get_all_word_embeddings
+from model import predict_vector_on_model, load_model
 
 
 def train(location='./train/'):
@@ -25,10 +24,11 @@ def train(location='./train/'):
     # run_vgg(location)
     labels_embedding = run_word_preprocessing()
     model.train_model(labels_embedding, location)
-    trained_image_filenames, trained_image_vectors = get_all_trained_image_vectors()
-
-    create_cluster(trained_image_vectors, "preprocessing/image_vector_cluster.pickle")
-
+    all_filenames, all_embedded_vectors = get_all_word_embeddings()
+    cluster = create_cluster(all_embedded_vectors)
+    # cluster_dict = get_dict_cluster_sizes(cluster)
+    # for i in cluster_dict:
+    #     print("Cluster id: ", i, " Size: ", cluster_dict[i])
 
 def test(queries=list(), location='./test'):
     """
@@ -50,7 +50,7 @@ def test(queries=list(), location='./test'):
     count = 0
     tot = len(queries)
     cluster = get_cluster()
-    model = get_prediction_model()
+    model = load_model()
     for query in queries:
 
         # This is the image. Just opening if here for the fun of it; not used later
@@ -61,7 +61,9 @@ def test(queries=list(), location='./test'):
         # cluster = [training_labels[random.randint(0, len(training_labels) - 1)] for idx in range(50)]
         image_embedding = embed_image(location + '/pics/' + query + '.jpg')
         trained_image_embedding = predict_vector_on_model(image_embedding, model)
-        cluster_filenames = compare_to_cluster(trained_image_embedding, cluster, 50)
+        print("Trained img embedding size: ", len(trained_image_embedding[0]))
+        cluster_filenames, cluster_id = compare_to_cluster(trained_image_embedding, cluster, 50)
+        print("Cluster filenames", cluster_filenames)
         my_return_dict[query] = cluster_filenames
         print_progress(count, tot, prefix="Predicting images")
         count += 1
@@ -69,7 +71,7 @@ def test(queries=list(), location='./test'):
 
 if __name__ == "__main__":
     start_time = time.time()
-    # train()
+    train()
     labels_dict = load_pickle_file("./validate/pickle/descriptions000000000.pickle")
     predicted_images_dict = test([(f.split("pics/")[-1]).split(".jpg")[0] for f in glob.glob("./validate/pics/000000000/*.jpg")], "./validate")
     print("Time: ", time.time() - start_time)

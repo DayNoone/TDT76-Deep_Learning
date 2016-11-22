@@ -1,4 +1,5 @@
 import glob
+import keras
 import sys
 import math
 import numpy as np
@@ -32,16 +33,14 @@ def get_all_only_cnn_image_vectors():
 			all_image_vectors.append(image_folder_dictionary[image][0])
 	return [all_image_filnames, all_image_vectors]
 
-
-def get_all_trained_image_vectors():
+def get_all_word_embeddings():
 	all_image_filnames = []
-	all_image_vectors = []
-	for folder_path in glob.glob("./preprocessing/trained_image_embeddings" + "/*.pickle"):
-		image_folder_dictionary = load_pickle_file(folder_path)
-		for image in image_folder_dictionary:
-			all_image_filnames.append(image)
-			all_image_vectors.append(image_folder_dictionary[image][0])
-	return [all_image_filnames, all_image_vectors]
+	all_word_embeddings = []
+	word_embedding_dict = load_pickle_file("./preprocessing/labels_embedding.pickle")
+	for image in word_embedding_dict:
+		all_image_filnames.append(image)
+		all_word_embeddings.append(word_embedding_dict[image])
+	return [all_image_filnames, all_word_embeddings]
 
 
 def load_pickle_file(path):
@@ -84,3 +83,17 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
 	if iteration == total:
 		sys.stdout.write('\n')
 	sys.stdout.flush()
+
+
+class WriteToFileCallback(keras.callbacks.Callback):
+	def __init__(self, filename="training-epochs-results-DEFAULT.txt"):
+		super(self.__class__, self).__init__()
+		self.filename = filename
+
+	def on_epoch_end(self, epoch, logs={}):
+		file = open(self.filename, 'a')
+		file.write("%s," % epoch)
+		for k, v in logs.items():
+			file.write("%s,%s," % (k, v))
+		file.write("\n")
+		file.close()
