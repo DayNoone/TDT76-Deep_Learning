@@ -1,16 +1,16 @@
 import glob
+import os
 import time
+import numpy as np
 
 from keras.callbacks import EarlyStopping
 from keras.engine import Input, Model
 from keras.layers import Dense
 
-from helpers import WriteToFileCallback
+from word_preprocessing import run_word_preprocessing
+from helpers import load_pickle_file, save_pickle_file, WriteToFileCallback, print_progress
+
 custom_callback = WriteToFileCallback("results.txt")
-
-from word_preprocessing import *
-from helpers import load_pickle_file, save_pickle_file
-
 early_stopping = EarlyStopping(monitor='val_loss', patience=3)
 
 OPTIMIZER = "adam"
@@ -77,9 +77,9 @@ def save_trained_embeddings():
 
 	start_time = time.time()
 	count = 0
-	tot = len(glob.glob("./preprocessing/stored_image_embeddings_train/*.pickle"))
-	for file in glob.glob("./preprocessing/stored_image_embeddings_train/*.pickle"):
-		store_path = "./preprocessing/trained_image_embeddings/" + file.split('/')[-1]
+	tot = len(glob.glob("./stored_image_embeddings_train/*.pickle"))
+	for file in glob.glob("./stored_image_embeddings_train/*.pickle"):
+		store_path = "./trained_image_embeddings/" + file.split('/')[-1]
 		trained_image_embeddings = {}
 		image_dict = load_pickle_file(file)
 		for image_filepath in image_dict:
@@ -106,7 +106,7 @@ def prepare_training_data(labels_dictionary, location="./train/"):
 	label_vectors = []
 
 	data_type = location.split("/")[1]
-	for folder_path in glob.glob("./preprocessing/stored_image_embeddings_" + data_type + "/*.pickle"):
+	for folder_path in glob.glob("./stored_image_embeddings_" + data_type + "/*.pickle"):
 		image_dictionary = load_pickle_file(folder_path)
 
 		for image in image_dictionary:
@@ -117,20 +117,20 @@ def prepare_training_data(labels_dictionary, location="./train/"):
 
 
 def model_is_saved():
-	if os.path.isfile("stored_models/" + MODEL_NAME + ".h5"):
+	if os.path.isfile(MODEL_NAME + ".h5"):
 		return True
 	return False
 
 
 def save_model_to_file(model):
-	model.save_weights("stored_models/" + MODEL_NAME + ".h5")
+	model.save_weights(MODEL_NAME + ".h5")
 	print("Saved model \"%s\" to disk" % MODEL_NAME)
 
 
 def load_model():
 	model = get_base_model()
 	print("Loading model \"%s\" from disk..." % MODEL_NAME)
-	model.load_weights("stored_models/" + MODEL_NAME + ".h5")
+	model.load_weights(MODEL_NAME + ".h5")
 	model.compile(optimizer=OPTIMIZER, loss=LOSS)
 	return model
 

@@ -2,7 +2,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 import model
 from cluster import get_cluster_members
-from helpers import print_progress, get_all_trained_image_vectors
+from helpers import get_all_trained_image_vectors, download_stored_image_embeddings_train, download_label_embeddings
 from image_preprocessing import embed_image
 from model import predict_vector_on_model, load_model
 from word_preprocessing import *
@@ -17,7 +17,11 @@ def train(location='./train/'):
     :return: nothing
     """
 
+    # Uncomment run_vgg and comment get_stored_image_embeddings to predict train on ResNet
+    download_stored_image_embeddings_train()
     # run_vgg(location)
+
+    download_label_embeddings()
     labels_embedding = run_word_preprocessing()
     model.train_model(labels_embedding, location)
 

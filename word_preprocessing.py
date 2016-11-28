@@ -13,15 +13,15 @@ Modified code taken from my master project: https://github.com/ruoccoma/master_w
 
 
 def get_relevant_word_embedding_dict(relevant_labels):
-	if os.path.isfile("preprocessing/glove_embedding.pickle"):
+	if os.path.isfile("glove_embedding.pickle"):
 		print("Fetching saved relevant word embedding dictionary")
-		f = open("preprocessing/glove_embedding.pickle", 'rb')
+		f = open("glove_embedding.pickle", 'rb')
 		relevant_embedded_words = pickle.load(f)
 		f.close()
 	else:
 		print("Creating relevant word embedding dictionary")
 		count_read_glove_embedding = 0
-		with open("preprocessing/glove.6B.300d.txt") as word_embedding:
+		with open("glove.6B.300d.txt") as word_embedding:
 			print("Getting word embeddings...")
 			relevant_embedded_words = {}
 			for line in word_embedding.readlines():
@@ -114,14 +114,14 @@ def convert_sentences(labels_dict, num_features):
 		counter += 1
 	print()
 
-	word_embedding_file = open("preprocessing/labels_embedding.pickle", 'wb')
+	word_embedding_file = open("labels_embedding.pickle", 'wb')
 	pickle.dump(sentenceFeatureVecs, word_embedding_file, protocol=2)
 	word_embedding_file.close()
 
 
 def get_word_embedding_dict(labels_dict):
-	if os.path.isfile("preprocessing/glove_embedding.pickle"):
-		f = open("preprocessing/glove_embedding.pickle", 'rb')
+	if os.path.isfile("glove_embedding.pickle"):
+		f = open("glove_embedding.pickle", 'rb')
 		word_embedding_dict = pickle.load(f)
 		f.close()
 	else:
@@ -136,10 +136,10 @@ def run_word_preprocessing(location="./train/"):
 	else:
 		print("Missing combine.pickle for this dir")
 
-	if not os.path.isfile("preprocessing/labels_embedding.pickle"):
+	if not os.path.isfile("labels_embedding.pickle"):
 		convert_sentences(train_labels, 300)
 
-	labels_embedding = load_pickle_file("preprocessing/labels_embedding.pickle")
+	labels_embedding = load_pickle_file("labels_embedding.pickle")
 	return labels_embedding
 
 

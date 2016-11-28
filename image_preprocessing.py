@@ -36,7 +36,7 @@ def run_vgg(folder, check_for_corrupt_images=False):
 		if print_corrupt_images() > 0:
 			return
 	for folder_path in glob.glob(folder + "pics/*"):
-		store_path = "preprocessing/stored_image_embeddings_" + folder.split("/")[1] + "/" + folder_path.split('/')[-1] + ".pickle"
+		store_path = "stored_image_embeddings_" + folder.split("/")[1] + "/" + folder_path.split('/')[-1] + ".pickle"
 		count = 1
 		tot = len(glob.glob(folder_path + "/*.jpg"))
 		predictions = {}
@@ -51,7 +51,7 @@ def run_vgg(folder, check_for_corrupt_images=False):
 			image_embedding_file.close()
 			print()
 		else:
-			print("Already preprocessed folder: ", folder_path)
+			print("Already preprocessed folder: %s" % folder_path, end="\r")
 
 
 def embed_image(path):
@@ -60,7 +60,7 @@ def embed_image(path):
 
 def print_corrupt_images():
 	count = 0
-	for folder_path in glob.glob("./../train/pics/*"):
+	for folder_path in glob.glob("./train/pics/*"):
 		for filepath in glob.glob(folder_path + "/*.jpg"):
 			try:
 				image.load_img(filepath, target_size=(224, 224))

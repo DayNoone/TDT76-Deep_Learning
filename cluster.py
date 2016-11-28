@@ -11,7 +11,7 @@ from model import load_model, predict_vector_on_model
 
 
 def get_cluster_members(trained_image_embedding):
-	clustered_filenames = load_pickle_file("preprocessing/" + EVALUATION_FOLDER + "_clustered_filenames.pickle")
+	clustered_filenames = load_pickle_file(EVALUATION_FOLDER + "_clustered_filenames.pickle")
 	cluster = get_cluster()
 	predicted_cluster_id = cluster.predict(trained_image_embedding)
 	cluster_member_filenames = []
@@ -23,7 +23,7 @@ def get_cluster_members(trained_image_embedding):
 
 
 def get_cluster():
-	cluster_path = "preprocessing/" + EVALUATION_FOLDER + "_cluster.pickle"
+	cluster_path = EVALUATION_FOLDER + "_cluster.pickle"
 	saved_cluster = load_pickle_file(cluster_path)
 	if saved_cluster is not None:
 		return saved_cluster
@@ -37,7 +37,6 @@ def create_cluster(vectors, cluster_path):
 		return saved_cluster
 	print("Creating cluster...")
 	cluster = MiniBatchKMeans(n_clusters=100, random_state=0, init_size=3000)
-	# cluster = DBSCAN(metric=cosine_similarity)
 	cluster.fit(vectors)
 	save_pickle_file(cluster, cluster_path)
 	return cluster
@@ -53,7 +52,7 @@ def get_dict_cluster_sizes(cluster):
 			cluster_dict[id] = 1
 	return cluster_dict
 
-EVALUATION_FOLDER = "validate"
+EVALUATION_FOLDER = "test"
 
 if __name__ == "__main__":
 	# Model needs to be stored
@@ -61,7 +60,7 @@ if __name__ == "__main__":
 	trained_image_filenames = []
 	trained_image_embeddings = []
 	count = 0
-	for file in glob.glob("./validate/pics/*/*.jpg"):
+	for file in glob.glob("./" + EVALUATION_FOLDER + "/pics/*/*.jpg"):
 		trained_image_filenames.append(file.split(".jpg")[0])
 		image_embedding = embed_image(file)
 		trained_image_embedding = predict_vector_on_model(image_embedding, model)[0]
@@ -69,8 +68,8 @@ if __name__ == "__main__":
 		print_progress(count + 1, 10000, prefix="Predicting images")
 		count += 1
 	print("Tr", len(trained_image_embeddings))
-	save_pickle_file(trained_image_filenames, "preprocessing/" + EVALUATION_FOLDER + "_clustered_filenames.pickle")
-	cluster = create_cluster(trained_image_embeddings, "preprocessing/" + EVALUATION_FOLDER + "_cluster.pickle")
+	save_pickle_file(trained_image_filenames, EVALUATION_FOLDER + "_clustered_filenames.pickle")
+	cluster = create_cluster(trained_image_embeddings, EVALUATION_FOLDER + "_cluster.pickle")
 	cluster_dict = get_dict_cluster_sizes(cluster)
 	max_cluster_size = 0
 	for i in cluster_dict:

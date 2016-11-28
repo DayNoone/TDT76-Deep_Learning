@@ -4,7 +4,6 @@ import glob
 import pickle
 
 import time
-from PIL import Image
 
 from your_code import train, test
 
@@ -149,26 +148,22 @@ if __name__ == "__main__":
     # train()
 
     # Generate random queries, just to run the "test"-function. These are elements from the TEST-SET folder
-    # test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
-    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/combine.pickle', directory='./validate/txt/')
+    test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
     test_ids = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
-    for i in range(1000):
+    for i in range(100):
         queries.append(test_ids[random.randint(0, no_test_images - 1)])
 
-    results = test(queries=queries, location="./validate")
+    results = test(queries=queries, location="./test")
 
     # Run the score function
     total_score = 0.0
     print(50 * '=' + '\n' + 'Individual image scores:' + '\n' + 50 * '=')
     for image in queries:
-        print("Query: ", image, ": ", all_labels[image.split("/")[-1]]) #
         if image in results.keys():
-            for i in results[image][:6]: #
-                print("Most similar: ", i, all_labels[i]) #
-            image_score = score(label_dict=all_labels, target=image.split("/")[-1], selection=results[image])
+            image_score = score(label_dict=all_labels, target=image, selection=results[image])
         else:
             image_score = 0.0
             print('No result generated for ' + image)
