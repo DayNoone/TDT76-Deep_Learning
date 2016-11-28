@@ -1,28 +1,34 @@
 import glob
-
 import time
-from keras.layers import Dense, Dropout, Lambda, BatchNormalization
-from keras.engine import Input, Model
+
 from keras.callbacks import EarlyStopping
-import keras.backend as K
+from keras.engine import Input, Model
+from keras.layers import Dense
 
-# from custom_callback import WriteToFileCallback
-# custom_callback = WriteToFileCallback(settings.RESULT_TEXTFILE_PATH)
+from helpers import WriteToFileCallback
+custom_callback = WriteToFileCallback("results.txt")
+
 from word_preprocessing import *
-from helpers.helpers import load_pickle_file, get_all_image_vectors, save_pickle_file, tf_l2norm
+from helpers import load_pickle_file, save_pickle_file
 
-
-early_stopping = EarlyStopping(monitor='val_loss', patience=5)
+early_stopping = EarlyStopping(monitor='val_loss', patience=3)
 
 OPTIMIZER = "adam"
-LOSS = "categorical_crossentropy"
-EPOCHS = 50
+LOSS = "mse"
+EPOCHS = 10
 BATCH_SIZE = 128
-MODEL_NAME = "FF" + "-" + str(EPOCHS) + "-" + str(BATCH_SIZE)
+MODEL_NAME = "MSE" + "-" + str(EPOCHS) + "-" + str(BATCH_SIZE)
 
 
 def train_model(labels_embedding, location):
 	if not model_is_saved():
+		start_time = time.time()
+		print("Start:", start_time)
+
+		f = open("results.txt", 'a')
+
+		f.write(50 * '=' + '\n' + MODEL_NAME + "\n")
+		f.close()
 		image_vectors, label_vectors = prepare_training_data(labels_embedding, location)
 		image_vectors = np.asarray(image_vectors)
 		label_vectors = np.asarray(label_vectors)
@@ -34,35 +40,40 @@ def train_model(labels_embedding, location):
 		model.fit(image_vectors, label_vectors,
 				  batch_size=BATCH_SIZE,
 				  nb_epoch=EPOCHS,
-				  callbacks=[early_stopping],
+				  callbacks=[custom_callback, early_stopping],
 				  validation_split=0.1,
 				  shuffle=True)
-
+		print("End:", time.time() - start_time)
 		save_model_to_file(model)
 
 		save_trained_embeddings()
 
 
+def get_base_model_large():
+	image_inputs = Input(shape=(2048,), name="Image_input")
+	image_model = Dense(2048, activation='relu')(image_inputs)
+	image_model = Dense(1024, activation='relu')(image_model)
+	image_model = Dense(1024, activation='relu')(image_model)
+	image_model = Dense(1024, activation='relu')(image_model)
+	image_model = Dense(1024, activation='relu')(image_model)
+	image_model = Dense(512, activation='relu')(image_model)
+	embedding_layer = Dense(512, activation='relu')(image_model)
+	predictions = Dense(300, activation='relu')(embedding_layer)
+	model = Model(input=image_inputs, output=predictions)
+	return model
+
 def get_base_model():
 	image_inputs = Input(shape=(2048,), name="Image_input")
 	image_model = Dense(1024, activation='relu')(image_inputs)
 	image_model = Dense(1024, activation='relu')(image_model)
-	embedding_layer = Dense(512, activation='relu', name="embedding_layer")(image_model)
-	predictions = Dense(300, activation='softmax', name="softmax_layer")(embedding_layer)
+	image_model = Dense(512, activation='relu')(image_model)
+	embedding_layer = Dense(512, activation='relu')(image_model)
+	predictions = Dense(300, activation='relu')(embedding_layer)
 	model = Model(input=image_inputs, output=predictions)
 	return model
 
-
-def get_prediction_model():
-	output_layer = "embedding_layer"
-	base_model = load_model()
-	model = Model(input=base_model.input, output=base_model.get_layer(output_layer).output)
-	model.compile(optimizer=OPTIMIZER, loss=LOSS)
-	return model
-
-
 def save_trained_embeddings():
-	model = get_prediction_model()
+	model = load_model()
 
 	start_time = time.time()
 	count = 0

@@ -1,15 +1,29 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import csv
+import glob
 
-from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import MiniBatchKMeans
-from sklearn.preprocessing import normalize
-import numpy as np
-from helpers.helpers import load_pickle_file, save_pickle_file, get_all_trained_image_vectors
+
+from helpers import load_pickle_file, save_pickle_file, print_progress
+from image_preprocessing import embed_image
+from model import load_model, predict_vector_on_model
+
+
+def get_cluster_members(trained_image_embedding):
+	clustered_filenames = load_pickle_file("preprocessing/" + EVALUATION_FOLDER + "_clustered_filenames.pickle")
+	cluster = get_cluster()
+	predicted_cluster_id = cluster.predict(trained_image_embedding)
+	cluster_member_filenames = []
+	for i in range(len(cluster.labels_)):
+		if predicted_cluster_id == cluster.labels_[i]:
+			cluster_member_filenames.append(clustered_filenames[i].split("/")[-1])
+
+	return cluster_member_filenames
 
 
 def get_cluster():
-	cluster_path = "preprocessing/image_vector_cluster.pickle"
+	cluster_path = "preprocessing/" + EVALUATION_FOLDER + "_cluster.pickle"
 	saved_cluster = load_pickle_file(cluster_path)
 	if saved_cluster is not None:
 		return saved_cluster
@@ -29,28 +43,6 @@ def create_cluster(vectors, cluster_path):
 	return cluster
 
 
-def compare_to_cluster(vector, image_cluster, k):
-	all_image_filenames, all_image_vectors = get_all_trained_image_vectors()
-	predicted_cluster_id = image_cluster.predict(vector)
-
-	cluster_member_filenames = []
-	cluster_member_vectors = []
-	for i in range(len(image_cluster.labels_)):
-		if predicted_cluster_id == image_cluster.labels_[i]:
-			cluster_member_filenames.append(all_image_filenames[i])
-			cluster_member_vectors.append(all_image_vectors[i])
-	similarities = []
-	print("Cluster size: ", len(cluster_member_filenames))
-	for i in range(len(cluster_member_filenames)):
-		similarity = cosine_similarity(vector, [cluster_member_vectors[i]])
-		similarities.append((cluster_member_filenames[i], similarity))
-	similarities.sort(key=lambda s: s[1], reverse=True)
-	most_similar_filenames = []
-	for tuple in similarities[:k]:
-		most_similar_filenames.append(tuple[0])
-	return most_similar_filenames, predicted_cluster_id
-
-
 def get_dict_cluster_sizes(cluster):
 	cluster_dict = {}
 	for id in cluster.labels_:
@@ -61,6 +53,37 @@ def get_dict_cluster_sizes(cluster):
 			cluster_dict[id] = 1
 	return cluster_dict
 
+EVALUATION_FOLDER = "validate"
 
 if __name__ == "__main__":
-	pass
+	# Model needs to be stored
+	model = load_model()
+	trained_image_filenames = []
+	trained_image_embeddings = []
+	count = 0
+	for file in glob.glob("./validate/pics/*/*.jpg"):
+		trained_image_filenames.append(file.split(".jpg")[0])
+		image_embedding = embed_image(file)
+		trained_image_embedding = predict_vector_on_model(image_embedding, model)[0]
+		trained_image_embeddings.append(trained_image_embedding)
+		print_progress(count + 1, 10000, prefix="Predicting images")
+		count += 1
+	print("Tr", len(trained_image_embeddings))
+	save_pickle_file(trained_image_filenames, "preprocessing/" + EVALUATION_FOLDER + "_clustered_filenames.pickle")
+	cluster = create_cluster(trained_image_embeddings, "preprocessing/" + EVALUATION_FOLDER + "_cluster.pickle")
+	cluster_dict = get_dict_cluster_sizes(cluster)
+	max_cluster_size = 0
+	for i in cluster_dict:
+		print("Cluster: ", i, " size: ", cluster_dict[i])
+		if cluster_dict[i] > max_cluster_size:
+			max_cluster_size = cluster_dict[i]
+	print("Largest cluster: ", max_cluster_size)
+
+	count = 0
+	with open("cluster.csv", "w") as csvfile:
+		wr = csv.writer(csvfile, quoting=csv.QUOTE_MINIMAL, delimiter=";")
+		for i in range(len(trained_image_filenames)):
+			data = [trained_image_filenames[i].split("/")[-1], cluster.labels_[i], trained_image_embeddings[i]]
+			wr.writerow(data)
+			print_progress(count + 1, 10000, prefix="Writing to csv file")
+			count += 1

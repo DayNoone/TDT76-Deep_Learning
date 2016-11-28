@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import os
-import numpy as np  # Make sure that numpy is imported
 import pickle
-import settings
-from helpers.helpers import print_progress, load_pickle_file
+
+import numpy as np
+
+from helpers import print_progress, load_pickle_file
 
 """
 Modified code taken from my master project: https://github.com/ruoccoma/master_works/
@@ -136,7 +137,7 @@ def run_word_preprocessing(location="./train/"):
 		print("Missing combine.pickle for this dir")
 
 	if not os.path.isfile("preprocessing/labels_embedding.pickle"):
-		convert_sentences(train_labels, settings.WORD_EMBEDDING_DIMENSION)
+		convert_sentences(train_labels, 300)
 
 	labels_embedding = load_pickle_file("preprocessing/labels_embedding.pickle")
 	return labels_embedding

@@ -1,18 +1,13 @@
-import glob
-import pickle
-import random
+from sklearn.metrics.pairwise import cosine_similarity
 
-import time
-from PIL import Image
-
-from image_preprocessing import run_vgg
-from word_preprocessing import *
 import model
-from cluster import compare_to_cluster, create_cluster, get_cluster, get_dict_cluster_sizes
+from cluster import get_cluster_members
+from helpers import print_progress, get_all_trained_image_vectors
 from image_preprocessing import embed_image
-from helpers.helpers import load_pickle_file, get_all_trained_image_vectors
-from model import predict_vector_on_model, get_prediction_model
+from model import predict_vector_on_model, load_model
+from word_preprocessing import *
 
+USE_CLUSTERING = False
 
 def train(location='./train/'):
     """
@@ -25,16 +20,7 @@ def train(location='./train/'):
     # run_vgg(location)
     labels_embedding = run_word_preprocessing()
     model.train_model(labels_embedding, location)
-    trained_image_filenames, trained_image_vectors = get_all_trained_image_vectors()
 
-    cluster = create_cluster(trained_image_vectors, "preprocessing/image_vector_cluster.pickle")
-    cluster_dict = get_dict_cluster_sizes(cluster)
-    max_cluster_size = 0
-    for i in cluster_dict:
-        # print("Cluster: ", i, " size: ", cluster_dict[i])
-        if cluster_dict[i] > max_cluster_size:
-            max_cluster_size = cluster_dict[i]
-    print("Largest cluster: ", max_cluster_size)
 
 def test(queries=list(), location='./test'):
     """
@@ -55,28 +41,40 @@ def test(queries=list(), location='./test'):
     # training_labels = list(training_labels.keys())
     count = 0
     tot = len(queries)
-    cluster = get_cluster()
-    model = get_prediction_model()
+    model = load_model()
+
+
     for query in queries:
-        query_path = find_file(query + ".jpg", location)
-        # Generate a random list of 50 entries
-        # cluster = [training_labels[random.randint(0, len(training_labels) - 1)] for idx in range(50)]
+        query_path = get_file_from_path(query + ".jpg", location)
         image_embedding = embed_image(query_path)
         trained_image_embedding = predict_vector_on_model(image_embedding, model)
-        cluster_filenames, predicted_cluster_id = compare_to_cluster(trained_image_embedding, cluster, 50)
-        my_return_dict[query] = cluster_filenames
-        print_progress(count, tot, prefix="Predicting images")
+        if USE_CLUSTERING:
+            most_similar = get_cluster_members(trained_image_embedding)
+        else:
+            most_similar = get_most_similar(trained_image_embedding)
+        my_return_dict[query] = most_similar
+        print_progress(count, tot, prefix="Retrieving similar images", suffix=len(most_similar))
         count += 1
     return my_return_dict
 
-def find_file(name, path):
+
+def get_most_similar(trained_image_embedding):
+    trained_image_filenames, trained_image_vectors = get_all_trained_image_vectors()
+    cos_values = cosine_similarity(trained_image_embedding, trained_image_vectors)[0]
+    similarities = []
+    for i in range(len(trained_image_filenames)):
+        similarities.append((trained_image_filenames[i], cos_values[i]))
+    similarities.sort(key=lambda s: s[1], reverse=True)
+
+    most_similar_filenames = []
+    for tuple in similarities:
+        most_similar_filenames.append(tuple[0])
+        if tuple[1] < 0.9:
+            break
+    return most_similar_filenames
+
+
+def get_file_from_path(name, path):
     for root, dirs, files in os.walk(path):
         if name in files:
             return os.path.join(root, name)
-
-if __name__ == "__main__":
-    start_time = time.time()
-    # train()
-    labels_dict = load_pickle_file("./validate/pickle/descriptions000000000.pickle")
-    predicted_images_dict = test([(f.split("pics/")[-1]).split(".jpg")[0] for f in glob.glob("./validate/pics/000000000/*.jpg")], "./validate")
-    print("Time: ", time.time() - start_time)
