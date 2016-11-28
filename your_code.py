@@ -1,11 +1,14 @@
+import os
+
 from sklearn.metrics.pairwise import cosine_similarity
 
 import model
 from cluster import get_cluster_members
-from helpers import get_all_trained_image_vectors, download_stored_image_embeddings_train, download_label_embeddings
+from helpers import get_all_trained_image_vectors, download_stored_image_embeddings_train, download_label_embeddings, \
+    print_progress
 from image_preprocessing import embed_image
 from model import predict_vector_on_model, load_model
-from word_preprocessing import *
+from word_preprocessing import run_word_preprocessing
 
 USE_CLUSTERING = False
 

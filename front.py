@@ -153,7 +153,7 @@ if __name__ == "__main__":
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
-    for i in range(100):
+    for i in range(1000):
         queries.append(test_ids[random.randint(0, no_test_images - 1)])
 
     results = test(queries=queries, location="./test")
@@ -173,6 +173,3 @@ if __name__ == "__main__":
     print(50 * '=' + '\n' + 'Average score over %d images: %10.8f' % (len(queries), total_score / len(queries))
           + '\n' + 50 * '=')
     print("Time elapsed: ", time.time() - start_time)
-    f = open("results.txt", 'a')
-    f.write(50 * '=' + '\n' + 'Average score over %d images: %10.8f\n' % (len(queries), total_score / len(queries)))
-    f.close()

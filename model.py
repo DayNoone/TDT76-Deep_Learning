@@ -7,7 +7,6 @@ from keras.callbacks import EarlyStopping
 from keras.engine import Input, Model
 from keras.layers import Dense
 
-from word_preprocessing import run_word_preprocessing
 from helpers import load_pickle_file, save_pickle_file, WriteToFileCallback, print_progress
 
 custom_callback = WriteToFileCallback("results.txt")
@@ -49,19 +48,6 @@ def train_model(labels_embedding, location):
 		save_trained_embeddings()
 
 
-def get_base_model_large():
-	image_inputs = Input(shape=(2048,), name="Image_input")
-	image_model = Dense(2048, activation='relu')(image_inputs)
-	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = Dense(1024, activation='relu')(image_model)
-	image_model = Dense(512, activation='relu')(image_model)
-	embedding_layer = Dense(512, activation='relu')(image_model)
-	predictions = Dense(300, activation='relu')(embedding_layer)
-	model = Model(input=image_inputs, output=predictions)
-	return model
-
 def get_base_model():
 	image_inputs = Input(shape=(2048,), name="Image_input")
 	image_model = Dense(1024, activation='relu')(image_inputs)
@@ -72,9 +58,9 @@ def get_base_model():
 	model = Model(input=image_inputs, output=predictions)
 	return model
 
+
 def save_trained_embeddings():
 	model = load_model()
-
 	start_time = time.time()
 	count = 0
 	tot = len(glob.glob("./stored_image_embeddings_train/*.pickle"))
@@ -133,7 +119,3 @@ def load_model():
 	model.load_weights(MODEL_NAME + ".h5")
 	model.compile(optimizer=OPTIMIZER, loss=LOSS)
 	return model
-
-if __name__ == "__main__":
-	labels_dictionary = run_word_preprocessing("./train/")
-	train_model(labels_dictionary, "./train/")

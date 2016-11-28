@@ -34,7 +34,7 @@ def download_stored_image_embeddings_train():
 		zf.close()
 
 def download_label_embeddings():
-	if not os.path.isdir("labels_embedding.pickle"):
+	if not os.path.isfile("labels_embedding.pickle"):
 		print("Getting labels_embedding from folk.ntnu.no/dagih...")
 		zipurl = 'http://folk.ntnu.no/dagih/labels_embedding.pickle.zip'
 		# Download the file from the URL
